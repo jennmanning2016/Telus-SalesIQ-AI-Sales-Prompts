@@ -1,0 +1,136 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>TAC SalesIQ Prompt Library</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap"/>
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f6f6f6;
+    }
+    header {
+      background-color: #4B286D;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav {
+      display: flex;
+      justify-content: center;
+      background-color: #eee;
+      flex-wrap: wrap;
+    }
+    nav button {
+      padding: 10px 20px;
+      margin: 5px;
+      border: none;
+      background-color: #fff;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+    nav button.active {
+      background-color: #4B286D;
+      color: white;
+    }
+    .container {
+      padding: 20px;
+    }
+    .prompt-card {
+      background: white;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 15px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .prompt-card h3 {
+      margin-top: 0;
+    }
+    .tags {
+      color: #666;
+      font-size: 0.85em;
+    }
+    .copy-button {
+      background-color: #4B286D;
+      color: white;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>TAC SalesIQ Prompt Library</h1>
+    <p>Smart, customizable sales prompts designed to help TELUS Sales Executives respond faster and win more.</p>
+  </header>
+  <nav id="tabs"></nav>
+  <div class="container" id="prompt-container">Loading prompts...</div>
+
+  <script>
+    const sheetUrl = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQwo2oXpBHICeC7irWkVLH_vD7RbVHi_JEVNsaZvTiHlino8C7SVvTK9s3bIR__Q8DVbJjwcsuOR_an/pub?output=csv";
+    let allPrompts = [];
+
+    async function loadPrompts() {
+      const res = await fetch(sheetUrl);
+      const text = await res.text();
+      const rows = text.split("\n").slice(1).map(row => row.split(","));
+      allPrompts = rows.map(r => ({
+        id: r[0],
+        businessUnit: r[1],
+        title: r[2],
+        prompt: r[3],
+        tags: r[4]
+      }));
+      renderTabs();
+      renderPrompts("All");
+    }
+
+    function renderTabs() {
+      const tabsContainer = document.getElementById("tabs");
+      const units = ["All", ...new Set(allPrompts.map(p => p.businessUnit).filter(Boolean))];
+      units.forEach(unit => {
+        const btn = document.createElement("button");
+        btn.textContent = unit;
+        btn.onclick = () => {
+          document.querySelectorAll("nav button").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          renderPrompts(unit);
+        };
+        if (unit === "All") btn.classList.add("active");
+        tabsContainer.appendChild(btn);
+      });
+    }
+
+    function renderPrompts(unit) {
+      const container = document.getElementById("prompt-container");
+      container.innerHTML = "";
+      const prompts = unit === "All" ? allPrompts : allPrompts.filter(p => p.businessUnit === unit);
+      if (prompts.length === 0) {
+        container.innerHTML = "<p>No prompts available.</p>";
+        return;
+      }
+      prompts.forEach(p => {
+        const card = document.createElement("div");
+        card.className = "prompt-card";
+        card.innerHTML = `
+          <h3>${p.title}</h3>
+          <p>${p.prompt}</p>
+          <p class="tags">${p.tags}</p>
+          <button class="copy-button" onclick="navigator.clipboard.writeText('${p.prompt.replace(/'/g, "\'")}')">Copy</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    loadPrompts();
+  </script>
+</body>
+</html>
